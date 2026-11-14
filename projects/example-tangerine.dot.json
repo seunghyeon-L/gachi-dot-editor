@@ -1,0 +1,42 @@
+{
+  "format": "gachi-dot/1",
+  "name": "example-tangerine",
+  "width": 16, "height": 16,
+  "pivot": [8, 15],
+  "palette": [
+    ["a", "#000000", "귤새 알"],
+    ["g", "#c9622a", "귤새 어린 새"],
+    ["t", "#ff8a3d", "귤새 어린 새"],
+    ["w", "#ffbe4b", "귤새 어린 새"],
+    ["I", "#2e7d32", "귤새 어린 새"],
+    ["K", "#348d38", "귤새 어린 새"],
+    ["L", "#3a9d3e", "귤새 어린 새"]
+  ],
+  "layers": [
+    {"name":"레이어 1","visible":true,"opacity":255,"locked":false}
+  ],
+  "frames": [100],
+  "tags": [
+
+  ],
+  "cels": [
+    { "layer": "레이어 1", "frame": 0, "rows": [
+        "................",
+        "................",
+        "........a.aaa...",
+        "......aaIaLLKa..",
+        "....aawtttaKa...",
+        "...awwwttttta...",
+        "...awwwttttta...",
+        "..awwwttttttta..",
+        "..awwtttttttta..",
+        "..awttttttttga..",
+        "..attttttttgga..",
+        "..atttttttggga..",
+        "...atttttggga...",
+        "...attttgggga...",
+        "....aatgggaa....",
+        "......aaaa......"
+    ] }
+  ]
+}

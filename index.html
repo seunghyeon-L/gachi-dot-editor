@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>가치고치 도트 편집기</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="app">
+    <header id="top">
+      <span class="brand">가치고치 도트 편집기</span>
+      <select id="projSel" title="프로젝트"></select>
+      <button data-act="new">새로 만들기</button>
+      <button data-act="import">가져오기</button>
+      <button data-act="export">내보내기</button>
+      <span class="sep"></span>
+      <button data-act="undo" title="되돌리기 (Ctrl+Z)">↶</button>
+      <button data-act="redo" title="다시 하기 (Ctrl+Y)">↷</button>
+      <button data-act="resize">캔버스 크기</button>
+      <button data-act="pivot" title="기준점을 정할 곳을 캔버스에서 클릭">기준점</button>
+      <span class="sep"></span>
+      <div id="ctxbar"></div>
+      <span class="grow"></span>
+      <span id="saveState" class="dim"></span>
+      <button data-act="compare" title="여러 동작을 나란히 움직여 보기 (새 탭)">비교 보기</button>
+      <button data-act="help">단축키</button>
+    </header>
+
+    <aside id="tools"></aside>
+
+    <aside id="colors">
+      <div id="fgbg">
+        <div id="bgSw" class="sw big" title="뒷색 (오른쪽 클릭으로 칠함)"></div>
+        <div id="fgSw" class="sw big" title="앞색"></div>
+        <button id="swapCol" title="앞/뒷색 바꾸기 (X)">⇄</button>
+      </div>
+      <div id="fgInfo" class="dim small"></div>
+      <div class="panelHead">팔레트 <span class="grow"></span>
+        <button data-act="palAdd" title="색 추가">+</button>
+        <button data-act="palClean" title="안 쓰는 색 지우기">정리</button>
+      </div>
+      <div id="palette"></div>
+      <div class="dim small hint">클릭 앞색 · 오른쪽 클릭 뒷색 · 더블클릭 색 바꾸기(쓴 곳 전부 바뀜)</div>
+    </aside>
+
+    <main id="editor">
+      <canvas id="cv"></canvas>
+      <div id="toast"></div>
+    </main>
+
+    <aside id="right">
+      <div class="panelHead">미리보기 <span class="grow"></span>
+        <button id="pvPlay" title="재생/멈춤">❚❚</button>
+      </div>
+      <div id="pvWrap"><canvas id="pv"></canvas></div>
+      <div id="pvCtl">
+        <select id="pvTag" title="재생할 태그"></select>
+        <select id="pvScale" title="배율"></select>
+        <select id="pvSpeed" title="속도">
+          <option value="0.25">×¼</option><option value="0.5">×½</option><option value="1" selected>×1</option><option value="2">×2</option>
+        </select>
+        <select id="pvBg" title="배경">
+          <option value="checker">체크</option><option value="#ffffff">흰색</option><option value="#1a1520">검정</option>
+          <option value="#5bb04a">풀밭</option><option value="#ecd7a3">모래</option><option value="#3fb3c9">바다</option>
+        </select>
+        <label title="프레임별 이동 거리(motion)대로 옆으로 움직여 보기"><input type="checkbox" id="pvMove"> 이동</label>
+      </div>
+      <div id="pvInfo" class="dim small"></div>
+      <div class="panelHead">작업 기록 <span class="dim small">(클릭 = 그 시점으로)</span></div>
+      <div id="history"></div>
+    </aside>
+
+    <footer id="timeline">
+      <div id="tlBar"></div>
+      <div id="tlScroll"><div id="tlGrid"></div></div>
+    </footer>
+
+    <div id="status"></div>
+  </div>
+
+  <input type="file" id="fileIn" accept="image/png" hidden>
+  <div id="modalBack" hidden><form id="modal"></form></div>
+  <div id="menu" hidden></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>동작 비교</title>
+  <style>
+    :root { --bg: #1d1a23; --panel: #2a2631; --line: #463f52; --text: #ebe7f0; --dim: #9e96aa; --acc: #f08a3c; color-scheme: dark; font-family: "Pretendard", "Malgun Gothic", system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-size: 13px; }
+    header { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+    header b { color: var(--acc); }
+    select, input, button { font: inherit; color: var(--text); background: #35303e; border: 1px solid var(--line); border-radius: 3px; padding: 2px 7px; height: 26px; }
+    label { display: inline-flex; gap: 4px; align-items: center; }
+    main { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; padding: 12px 16px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+    .card h3 { margin: 0 0 2px; font-size: 14px; }
+    .card .meta { color: var(--dim); font-size: 12px; margin-bottom: 6px; }
+    .card canvas { display: block; width: 100%; image-rendering: pixelated; border-radius: 3px; }
+    .card a { color: #6fb8ff; font-size: 12px; }
+    .dim { color: var(--dim); }
+  </style>
+</head>
+<body>
+  <header>
+    <b>동작 비교</b>
+    <label>프로젝트 <input id="filter" value="gyulsae-egg" size="14" title="이름에 이 글자가 들어간 프로젝트"></label>
+    <label>배율 <select id="scale"><option>2</option><option selected>3</option><option>4</option><option>6</option></select></label>
+    <label>속도 <select id="speed"><option value="0.25">×¼</option><option value="0.5">×½</option><option value="1" selected>×1</option><option value="2">×2</option></select></label>
+    <label>배경 <select id="bg"><option value="#ecd7a3">모래</option><option value="#5bb04a">풀밭</option><option value="#3fb3c9">바다</option><option value="#ffffff">흰색</option><option value="#1a1520">검정</option></select></label>
+    <label><input type="checkbox" id="move" checked> 이동</label>
+    <label><input type="checkbox" id="shadow" checked> 그림자</label>
+    <button id="reload">다시 읽기</button>
+    <span class="dim">각 카드: 프레임 수 · 한 바퀴 시간 · 한 바퀴 이동 거리. 이름을 누르면 편집기에서 열림</span>
+  </header>
+  <main id="grid"></main>
+  <script type="module">
+    import * as core from './core.js';
+    const $ = (s) => document.querySelector(s);
+    let items = [];
+    const qf = new URLSearchParams(location.search).get('filter');
+    if (qf != null) $('#filter').value = qf;
+    async function load() {
+      const list = await (await fetch('/api/list')).json();
+      const f = $('#filter').value.trim();
+      const names = list.filter((p) => !p.error && (!f || p.name.includes(f))).map((p) => p.name);
+      items = [];
+      for (const name of names) {
+        const r = await (await fetch('/api/doc?name=' + encodeURIComponent(name))).json();
+        if (r.ok === false) continue;
+        const doc = core.parse(r.text, { name });
+        const tag = doc.tags[0]?.name || null;
+        items.push({ name, doc, order: core.playOrder(doc, tag), tag, i: 0, acc: 0, x: 0, cv: null, off: null });
+      }
+      $('#grid').innerHTML = items.map((it, k) => {
+        const d = it.doc, total = d.frames.reduce((a, b) => a + b, 0), mv = (d.motion || []).reduce((a, b) => a + b, 0);
+        return `<div class="card"><h3><a href="/" data-open="${it.name}">${it.name}</a></h3>
+          <div class="meta">${d.frames.length}프레임 · ${total}ms${it.tag ? ` · 태그 ${it.tag} (${d.tags[0].dir})` : ''} · 이동 ${mv}px${mv ? ` · ${Math.round(mv / (total / 1000))}px/초` : ''}</div>
+          <canvas id="c${k}"></canvas></div>`;
+      }).join('') || '<p class="dim">프로젝트가 없어요</p>';
+      items.forEach((it, k) => { it.cv = $('#c' + k); it.off = document.createElement('canvas'); });
+    }
+    $('#grid').addEventListener('click', async (e) => {
+      const a = e.target.closest('[data-open]');
+      if (!a) return;
+      e.preventDefault();
+      await fetch('/api/open', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: a.dataset.open }) });
+      window.open('/', 'dot-editor');
+    });
+    let last = 0;
+    function frame(now) {
+      requestAnimationFrame(frame);
+      const dt = last ? Math.min(250, now - last) : 0;
+      last = now;
+      const sc = +$('#scale').value, sp = +$('#speed').value, moving = $('#move').checked, withShadow = $('#shadow').checked;
+      for (const it of items) {
+        const d = it.doc;
+        it.acc += dt * sp;
+        while (it.acc >= d.frames[it.order[it.i]]) {
+          it.acc -= d.frames[it.order[it.i]];
+          it.x += d.motion?.[it.order[it.i]] || 0;
+          it.i = (it.i + 1) % it.order.length;
+        }
+        const f = it.order[it.i], next = it.order[(it.i + 1) % it.order.length];
+        // 프레임 사이를 매 화면마다 이어서: 앞으로 가는 거리는 시간에 비례, 높이(lift)는 다음 프레임 쪽으로
+        const m = core.motionAt(d, f, next, Math.min(1, it.acc / d.frames[f]));
+        const top = 4 + Math.max(0, -Math.min(0, ...(d.lift || [0]))) * sc;   // 높이(lift)로 떠도 위가 안 잘리게
+        const W = Math.max(d.w * sc, Math.round(it.cv.clientWidth || 300)), Hh = d.h * sc + top + 4;
+        if (it.cv.width !== W || it.cv.height !== Hh) { it.cv.width = W; it.cv.height = Hh; }
+        const c = it.cv.getContext('2d');
+        c.imageSmoothingEnabled = false;
+        c.fillStyle = $('#bg').value; c.fillRect(0, 0, W, Hh);
+        if (it.off.width !== d.w) { it.off.width = d.w; it.off.height = d.h; it.offS = document.createElement('canvas'); it.offS.width = d.w; it.offS.height = d.h; }
+        const parts = core.compositeSplit(d, f);
+        it.off.getContext('2d').putImageData(new ImageData(parts.body, d.w, d.h), 0, 0);
+        const span = W + d.w * sc;
+        const travels = (d.motion || []).some((v) => v);
+        const xs = (it.x + m.x) * sc;   // 화면 픽셀 단위 (도트 1칸보다 잘게 → 부드러움)
+        const x = moving && travels ? Math.round(((xs + d.w * sc) % span + span) % span - d.w * sc) : Math.round((W - d.w * sc) / 2);
+        if (withShadow && parts.shadow) {
+          it.offS.getContext('2d').putImageData(new ImageData(parts.shadow, d.w, d.h), 0, 0);
+          c.drawImage(it.offS, x, top, d.w * sc, d.h * sc);   // 그림자는 땅에
+        }
+        c.drawImage(it.off, x, top + Math.round(m.y * sc), d.w * sc, d.h * sc);
+      }
+    }
+    $('#reload').addEventListener('click', load);
+    $('#filter').addEventListener('change', load);
+    load().then(() => requestAnimationFrame(frame));
+  </script>
+</body>
+</html>
